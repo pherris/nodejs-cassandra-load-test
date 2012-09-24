@@ -17,3 +17,7 @@ exports.getAverageTime = function (callback) {
 
 	if (callback) callback(sum/times.length);
 };
+
+exports.getTimes = function (callback) {
+	if (callback) callback(times);
+}

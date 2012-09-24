@@ -19,28 +19,29 @@ module.exports = function (logLevel) {
 	}
 	
 	//private method to actually do the logging
-	function doLog(msg, level) {
+	function doLog(msg, level, callback) {
 		if (level>=instanceLevel) {
 			console.log(levelMap[level] + " : " + msg);
 		}
+		if (callback) callback(msg, level);
 	}
 	
 	//public methods for performing logging.
 	return {
-		debug: function (msg) {
-			doLog(msg, 1);
+		debug: function (msg, callback) {
+			doLog(msg, 1, callback);
 		},
-		info: function (msg) {
-			doLog(msg, 2);
+		info: function (msg, callback) {
+			doLog(msg, 2, callback);
 		},
-		warn: function (msg) {
-			doLog(msg, 3);
+		warn: function (msg, callback) {
+			doLog(msg, 3, callback);
 		},
-		error: function (msg) {
-			doLog(msg, 4);
+		error: function (msg, callback) {
+			doLog(msg, 4, callback);
 		},
-		fatal: function (msg) {
-			doLog(msg, 5);
+		fatal: function (msg, callback) {
+			doLog(msg, 5, callback);
 		}
 	}
 };
