@@ -4,11 +4,23 @@ var PooledConnection 	= require('cassandra-client').PooledConnection,
 	connection_pool,
 	con,
 	connectionConfiguration = {
-		//hosts 		: ["ec2-184-169-190-57.us-west-1.compute.amazonaws.com:9160"],
-		hosts 		: ["localhost:9160"],
-		//keyspace 	: "midstore",
-		keyspace 	: "midstore_new",
-		maxSize 	: 10,
+		hosts 		: [
+						"ec2-50-18-25-6.us-west-1.compute.amazonaws.com:9160",
+						"ec2-184-169-218-212.us-west-1.compute.amazonaws.com:9160",
+						"ec2-50-18-87-94.us-west-1.compute.amazonaws.com:9160",
+						"ec2-204-236-137-212.us-west-1.compute.amazonaws.com:9160",
+						"ec2-184-169-233-15.us-west-1.compute.amazonaws.com:9160",
+						"ec2-50-18-10-229.us-west-1.compute.amazonaws.com:9160",
+						"ec2-50-18-148-155.us-west-1.compute.amazonaws.com:9160",
+						"ec2-184-169-241-248.us-west-1.compute.amazonaws.com:9160",
+						"ec2-184-169-221-232.us-west-1.compute.amazonaws.com:9160",
+						"ec2-204-236-190-125.us-west-1.compute.amazonaws.com:9160",
+						"ec2-184-169-238-200.us-west-1.compute.amazonaws.com:9160",
+						"ec2-50-18-29-235.us-west-1.compute.amazonaws.com:9160"
+					],
+		//hosts 		: ["localhost:9160"],
+		keyspace 	: "midstore",
+		maxSize 	: 25,
 		use_bigints	: false,
 	};
 
@@ -55,7 +67,7 @@ exports.doPoolConnect = function (callback) {
 	// connection_pool = new PooledConnection({'hosts': ['ec2-184-169-190-57.us-west-1.compute.amazonaws.com:9160'], 'keyspace': 'midstore' });
 	
 	connection_pool.on('log', function(level, message, obj) {
-		console.log('log event: %s -- %j', level, message);
+		//console.log('log event: %s -- %j', level, message);
 	})
 	
 	if (callback) callback();
@@ -69,7 +81,7 @@ exports.query = function (cql, params, callback) {
 	
 	c.execute(cql, params, function (err) {
 	    if (err) {
-			logger.error(err);
+			//logger.error(err);
 			error = true;
 	    }
 		var end = new Date();

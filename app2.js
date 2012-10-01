@@ -4,14 +4,16 @@ var cassandraUtility 	= require('./cassandraUtility.js'),
 	logger				= require('./logger.js')("info"),
 	cluster				= require('cluster'),
 	start				= new Date(),
-	duration			= 50, //duration to run the test
+	duration			= 1000 * 60,// * 5, //duration to run the test
 	numCPUs 			= require('os').cpus().length,
-	statisticInterval	= 250,
+	statisticInterval	= 1000,
 	statisticsTimer		= null,
 	workers				= 0,
 	completed			= 0,
-	maxWorkers			= 1,
+	maxWorkers			= 100,
 	failureCount		= 0,
+	myId				= 0,
+	randomStringBuffer  = new Buffer(dataGenerator.unpack(dataGenerator.createRandomString(512))),
 	MESSAGE 			= {
 							INCREMENTAL: 'incremental',
 							SUMMARY:     'summary',
@@ -25,13 +27,17 @@ var cassandraUtility 	= require('./cassandraUtility.js'),
 /**
  * gathers statistics on increment basis
  **/
-function gatherIncrementalStats () {
+function gatherIncrementalStats (isMaster) {
 	insertTracker.getIncrementStats(function (stats) {
-		process.send({
-			type:  		MESSAGE.INCREMENTAL,
-			worker: 	process.env,
-			details: 	"CurrentWorkers: " + workers + ", TotalCompleted: " + completed + ", AverageTimeForInterval: " + stats.average + ", CountForInterval: " + stats.count
-		});
+		if (isMaster) {
+			logger.info("AverageTimeForInterval: " + stats.average + ", CountForInterval: " + stats.count);
+		} else {
+			process.send({
+				type:  		MESSAGE.INCREMENTAL,
+				worker: 	process.env,
+				details: 	"CurrentWorkers: " + workers + ", TotalCompleted: " + completed + ", AverageTimeForInterval: " + stats.average + ", CountForInterval: " + stats.count
+			});
+		}
 	}); //resets stats and gets current stats
 }
 
@@ -77,34 +83,40 @@ function doForDuration () {
 	}
 	
 	if (workers < maxWorkers && !shuttingDown) {
-		workers++;
-		completed++;
-		
-		//do I loop here to get up to maxWorkers, or only spin up one request at a time? for now I think it'll be fast enough to do one at a time...
-		cassandraUtility.query('UPDATE device_mids SET ? = ? WHERE DSN = ?',
-			params = [dataGenerator.generateDate(), new Buffer(dataGenerator.unpack(dataGenerator.createRandomString(1))),
-						dataGenerator.randomNumber(100000)],
-			function (error, timeTaken) {
-				workers--;
-				
-				if (error) {
-					failureCount++;
-				} else {
-					//log for my instance
-					insertTracker.addTime(timeTaken);
+		//this for loop takes you right to the max number of concurrent workers
+		for (i=0;i<(maxWorkers-workers);i++) {
+			workers++;
+			completed++;
+			//var ts = ""+(new Date()).getTime();
+			
+			//do I loop here to get up to maxWorkers, or only spin up one request at a time? for now I think it'll be fast enough to do one at a time...
+			cassandraUtility.query('UPDATE device_mids SET ? = ? WHERE KEY = ?',
+				params = [dataGenerator.generateDate(), randomStringBuffer,
+							myId + "" + completed], //each core has its own myId and the ts plus the count of completed
+				function (error, timeTaken) {
+					workers--;
 					
-					//and for all instances
-					process.send({
-						'type':  		MESSAGE.UPDATE,
-						'timeTaken': 	timeTaken
-					});
-				}
-				
-				
-		});
+					if (error) {
+						failureCount++;
+					} else {
+						//log for my instance
+						insertTracker.addTime(timeTaken);
+						
+						//and for all instances
+						process.send({
+							'type':  		MESSAGE.UPDATE,
+							'timeTaken': 	timeTaken
+						});
+					}
+					
+					
+			});
+		}
 	}
 	
-	process.nextTick(function () { doForDuration(); });
+	//process.nextTick was giving me 100% cpu
+	//process.nextTick(function () { doForDuration(); });
+	setTimeout(function () { doForDuration(); }, 1);
 
 }
 
@@ -112,6 +124,9 @@ function doForDuration () {
  * bootstrap method
  **/
 function main () {
+	//create a unique id for this worker
+	myId = dataGenerator.randomNumber(100);
+	logger.info("myId: " + myId);
 	//create the connection pool 
 	cassandraUtility.doPoolConnect(function () { logger.debug("connected"); });
 	//start running
@@ -123,6 +138,9 @@ logger.debug("start: \t"+start.getTime());
 
 //go!
 if (cluster.isMaster) {
+	//get stats incrementally
+	statisticsTimer = setInterval(function () { gatherIncrementalStats(true); }, statisticInterval);
+	
 	// Fork workers.
 	for (var i = 0; i < numCPUs; i++) {
 		cluster.fork();
@@ -138,6 +156,8 @@ if (cluster.isMaster) {
 		
 		if (countWorkers === 0 && !statsLogged) {
 			statsLogged = true;
+			clearInterval(statisticsTimer);
+			console.log("------------------------------------------");
 			logger.info("Average Time Across Cluster : " + insertTracker.getAverageTime());
 			logger.info("Total Inserts Across Cluster: " + insertTracker.getTimes().length);
 			logger.info("Test Ran For (Milliseconds) : " + ((new Date()).getTime() - start.getTime()));
@@ -149,10 +169,10 @@ if (cluster.isMaster) {
 	Object.keys(cluster.workers).forEach(function(id) {
 		cluster.workers[id].on('message', function (msg) { 
 			if (msg && msg.type === MESSAGE.INCREMENTAL) {
-				logger.info("Thread: " + msg.worker + " : " + msg.details);
+				logger.debug("Thread: " + msg.worker + " : " + msg.details);
 			} else if (msg && msg.type === MESSAGE.SUMMARY) {
 				//a node just sent it's summary...
-				workerStatsSummary += "\nworker finishing, failures: " + msg.failures + ", successes: " + msg.successes.length;
+				workerStatsSummary += "\n\tworker finishing, failures: " + msg.failures + ", successes: " + msg.successes.length;
 			} else if (msg && msg.type === MESSAGE.UPDATE) {
 				insertTracker.addTime(msg.timeTaken);
 			} 
