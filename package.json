@@ -6,17 +6,21 @@
     "name": "Andrew Ralston"
   },
   "version": "0.0.01",
+  "engines": {
+    "node": "0.8.x",
+    "npm":  "1.1.x"
+  }
   "repository": {
     "type": "git",
-    "url": "http://github.com/pherris/cassandra-client-loadtest.git"
+    "url": "http://github.com/pherris/cassandra-client-load-test.git"
   },
   "bugs": {
-    "url": "http://github.com/pherris/cassandra-client-loadtest/issues"
+    "url": "http://github.com/pherris/cassandra-client-load-test/issues"
   },
   "licenses": [
     {
+      "url": "http://github.com/pherris/cassandra-client-load-test/raw/master/LICENSE"
       "type": "MIT",
-      "url": "http://github.com/pherris/cassandra-client-loadtest/raw/master/LICENSE"
     }
   ],
   "devDependencies": {

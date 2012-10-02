@@ -1,6 +1,4 @@
 //TODO: tests
-//git license
-//git readme
 //abstract database class (for other database implementations)
 
 var cassandraUtility 	= require('./cassandraUtility.js'),
