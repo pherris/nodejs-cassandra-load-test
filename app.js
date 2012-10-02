@@ -122,12 +122,11 @@ function doForDuration () {
 /**
  * bootstrap method
  **/
-function main () {
-	logger.info("myId: " + myId);
+function main (processId) {
 	//create the connection pool 
 	cassandraUtility.doPoolConnect(function () { logger.debug("connected"); });
 	//create this worker's query object
-	query = new Query(dataGenerator.randomNumber(100));
+	query = new Query(processId);
 	//start running
 	doForDuration();
 	//start gathering statistics
@@ -142,7 +141,7 @@ if (cluster.isMaster) {
 	
 	// Fork workers.
 	for (var i = 0; i < numCPUs; i++) {
-		cluster.fork();
+		cluster.fork({ instanceId: i }); //pass a unique id to all workers because the env it should have is missing (windows)
 	}
 
 	cluster.on('exit', function(worker, code, signal) {
@@ -178,5 +177,5 @@ if (cluster.isMaster) {
 		});
 	});
 } else {
-    main();
+    main(process.env['instanceId']);
 }

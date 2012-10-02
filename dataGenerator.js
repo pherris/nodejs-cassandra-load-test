@@ -33,8 +33,8 @@ exports.unpack = function (str) {
     return bytes2;
 }
 
-exports.randomNumber = function (max) {
-	return Math.floor((Math.random()*max)+1)
+exports.randomNumber = function (min, max) {
+	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 exports.generateDate = function () {
