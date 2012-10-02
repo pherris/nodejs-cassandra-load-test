@@ -1,8 +1,6 @@
 var PooledConnection 	= require('cassandra-client').PooledConnection,
-	Connection 			= require('cassandra-client').Connection,
 	logger			 	= require('./logger.js')("info"),
 	connection_pool,
-	con,
 	connectionConfiguration = {
 		hosts 		: [
 						"ec2-50-18-25-6.us-west-1.compute.amazonaws.com:9160",
@@ -18,45 +16,13 @@ var PooledConnection 	= require('cassandra-client').PooledConnection,
 						"ec2-184-169-238-200.us-west-1.compute.amazonaws.com:9160",
 						"ec2-50-18-29-235.us-west-1.compute.amazonaws.com:9160"
 					],
-		//hosts 		: ["localhost:9160"],
 		keyspace 	: "midstore",
 		maxSize 	: 25,
 		use_bigints	: false,
 	};
 
-exports.doConnect = function (callback) {
-	if (connection_pool) {
-		logger.error("tried to create a single connection when a pool was already instantiated - please don't do that");
-		callback({ error: "can't create single instance, pool already exists" });
-		return;
-	}
-	if (con) {
-		callback(con);
-		return;
-	}
-	
-	con = new Connection(connectionConfiguration);
-	con.connect(function(err) {
-		// if err != null, something bad happened. 
-		// else, assume all is good.  your connection is ready to use.
-		if (!err) {
-			// close the connection and return to caller.
-			con.close(callback);
-		} else {
-			// no need to close, just return to caller.
-			callback(err);
-		}
-	});
-};
-
 //This creates the connection pool...	
 exports.doPoolConnect = function (callback) {
-	if (con) {
-		logger.error("tried to create a pooled connection when a single was already instantiated - please don't do that");
-		callback({ error: "can't create pooled instance, single already exists" });
-		return;
-	}
-	
 	//only create connection once...
 	if (connection_pool) { 
 		callback(connection_pool);
@@ -77,9 +43,8 @@ exports.doPoolConnect = function (callback) {
 exports.query = function (cql, params, callback) {
 	var start = new Date();
 	var error = false;
-	var c = (connection_pool) ? connection_pool : con;
 	
-	c.execute(cql, params, function (err) {
+	connection_pool.execute(cql, params, function (err) {
 	    if (err) {
 			//logger.error(err);
 			error = true;
@@ -99,8 +64,4 @@ exports.doPoolClose = function (callback) {
 		logger.info("disconnected");
 		if (callback) callback();
 	});
-};
-
-exports.doClose = function (callback) {
-	con.close(callback);
 };

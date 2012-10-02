@@ -14,6 +14,7 @@ exports.getAverageTime = function () {
 	return getAverage(totalTimes);
 };
 
+//returns the array with all times in it.
 exports.getTimes = function () {
 	return totalTimes;
 }
