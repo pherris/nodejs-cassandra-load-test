@@ -1,20 +1,23 @@
+//TODO: tests
+//git license
+//git readme
+//abstract database class (for other database implementations)
+
 var cassandraUtility 	= require('./cassandraUtility.js'),
 	insertTracker		= require('./insertTracker.js'),
-	logger				= require('./logger.js')("info"),
+	config				= require('./config.js'),
+	logger				= require('./logger.js')(config.debugLevel),
 	dataGenerator		= require('./dataGenerator.js'),
 	Query				= require('./myQuery.js'),
 	query				= null,
 	cluster				= require('cluster'),
-	start				= new Date(),
-	duration			= 1000 * 60,// * 5, //duration to run the test
 	numCPUs 			= require('os').cpus().length,
-	statisticInterval	= 1000,
+	start				= new Date(),
+	failureCount		= 0,
+	myId				= 0,
 	statisticsTimer		= null,
 	workers				= 0,
 	completed			= 0,
-	maxWorkers			= 100,
-	failureCount		= 0,
-	myId				= 0,
 	MESSAGE 			= {
 							INCREMENTAL: 'incremental',
 							SUMMARY:     'summary',
@@ -74,7 +77,7 @@ function doForDuration () {
 	
 	//run this for the alloted duration
 	var currentTime = new Date();
-	if (start.getTime() + duration <= currentTime.getTime()) {
+	if (start.getTime() + config.duration <= currentTime.getTime()) {
 		if (workers <= 0) {
 			cleanup();
 			return;
@@ -83,13 +86,12 @@ function doForDuration () {
 		}
 	}
 	
-	if (workers < maxWorkers && !shuttingDown) {
+	if (workers < config.maxWorkers && !shuttingDown) {
 		//this for loop takes you right to the max number of concurrent workers
-		for (i=0;i<(maxWorkers-workers);i++) {
+		for (i=0;i<(config.maxWorkers-workers);i++) {
 			workers++;
 			completed++;
-			// console.log(query.getQuery());
-			// console.log(query.getParams());
+			
 			cassandraUtility.query(query.getQuery(),
 				params = query.getParams(completed), //each core has its own myId and the ts plus the count of completed
 				function (error, timeTaken) {
@@ -107,16 +109,14 @@ function doForDuration () {
 							'timeTaken': 	timeTaken
 						});
 					}
-					
-					
-			});
+				}
+			);
 		}
 	}
 	
 	//process.nextTick was giving me 100% cpu
 	//process.nextTick(function () { doForDuration(); });
 	setTimeout(function () { doForDuration(); }, 1);
-
 }
 
 /**
@@ -130,14 +130,14 @@ function main (processId) {
 	//start running
 	doForDuration();
 	//start gathering statistics
-	statisticsTimer = setInterval(function () { gatherIncrementalStats(); }, statisticInterval);
+	statisticsTimer = setInterval(function () { gatherIncrementalStats(); }, config.statisticInterval);
 }
 logger.debug("start: \t"+start.getTime());
 
 //go!
 if (cluster.isMaster) {
 	//get stats incrementally
-	statisticsTimer = setInterval(function () { gatherIncrementalStats(true); }, statisticInterval);
+	statisticsTimer = setInterval(function () { gatherIncrementalStats(true); }, config.statisticInterval);
 	
 	// Fork workers.
 	for (var i = 0; i < numCPUs; i++) {
