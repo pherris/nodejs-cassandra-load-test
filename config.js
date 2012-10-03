@@ -21,7 +21,7 @@ var config = {
 	 * Debug level
 	 * options are: "debug", "info", "warn", "error", "fatal"
 	 **/
-	debugLevel:					"debug",
+	debugLevel:					"info",
 	
 	/**
 	 * Cassandra configuration object.
@@ -32,7 +32,12 @@ var config = {
 	 **/
 	cassandraPoolConnection: 	{
 		hosts 		: [
-						"localhost:9160"
+						//"localhost:9160",
+						"ec2-184-169-246-143.us-west-1.compute.amazonaws.com:9160",
+						"ec2-184-169-210-48.us-west-1.compute.amazonaws.com:9160",
+						"ec2-204-236-186-134.us-west-1.compute.amazonaws.com:9160",
+						"ec2-50-18-34-251.us-west-1.compute.amazonaws.com:9160",
+						"ec2-50-18-236-67.us-west-1.compute.amazonaws.com:9160"
 					],
 		keyspace 	: "loadstore",
 		maxSize 	: 25,

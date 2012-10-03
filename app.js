@@ -130,12 +130,13 @@ function main (processId) {
 	//start gathering statistics
 	statisticsTimer = setInterval(function () { gatherIncrementalStats(); }, config.statisticInterval);
 }
-logger.debug("start: \t"+start.getTime());
 
 //go!
 if (cluster.isMaster) {
 	//get stats incrementally
 	statisticsTimer = setInterval(function () { gatherIncrementalStats(true); }, config.statisticInterval);
+	
+	logger.info("spinning up " + numCPUs + " workers");
 	
 	// Fork workers.
 	for (var i = 0; i < numCPUs; i++) {
