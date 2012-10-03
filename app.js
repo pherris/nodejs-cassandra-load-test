@@ -136,9 +136,10 @@ if (cluster.isMaster) {
 	//get stats incrementally
 	statisticsTimer = setInterval(function () { gatherIncrementalStats(true); }, config.statisticInterval);
 	
-	logger.info("spinning up " + numCPUs + " workers");
+	logger.info("This test will run for (ms): " + config.duration);
+	logger.info("spinning up " + numCPUs + " instances");
 	
-	// Fork workers.
+	// Fork instances.
 	for (var i = 0; i < numCPUs; i++) {
 		cluster.fork({ instanceId: i }); //pass a unique id to all workers because the env it should have is missing (windows)
 	}
