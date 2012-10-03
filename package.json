@@ -16,7 +16,7 @@
     "url": "http://github.com/pherris/cassandra-client-load-test/issues"
   },
   "dependencies": {
-    "cassandra-client": ">0.9.2"
+    "cassandra-client": "0.9.2"
   },
   "engines": {
     "node": "0.8.x",
